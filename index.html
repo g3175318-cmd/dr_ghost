@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DR GHOST — AI Medical Consultation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:ital,wght@0,300;0,400;0,600;0,800;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020c18;--bg2:#050f22;--bg3:#071530;
+  --card:rgba(4,18,42,0.92);--glass:rgba(0,255,136,0.04);
+  --green:#00ff88;--green2:#00e065;--cyan:#00c8ff;--cyan2:#0099cc;
+  --red:#ff1744;--orange:#ff6b00;--yellow:#ffd600;
+  --text:#d4eeff;--text2:#7fa8c8;--text3:#4a7090;
+  --border:rgba(0,255,136,0.12);--border2:rgba(0,200,255,0.10);
+  --glow:0 0 20px rgba(0,255,136,0.25);--glow2:0 0 20px rgba(0,200,255,0.2);
+  --radius:14px;--radius-lg:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Exo 2',system-ui,sans-serif;
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse at 15% 40%,rgba(0,255,136,0.04) 0%,transparent 55%),
+    radial-gradient(ellipse at 85% 10%,rgba(0,200,255,0.05) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 95%,rgba(0,100,200,0.04) 0%,transparent 45%);
+}
+/* Grid overlay */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,255,136,0.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,136,0.02) 1px,transparent 1px);
+  background-size:50px 50px;pointer-events:none;z-index:0;
+}
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--green2);border-radius:3px;}
+/* ===== LOADING SCREEN ===== */
+#loadingScreen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;transition:opacity 0.8s;
+}
+#loadingScreen.hide{opacity:0;pointer-events:none;}
+.ghost-float{animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-20px);}}
+.ghost-svg{filter:drop-shadow(0 0 20px rgba(0,255,136,0.7));}
+.loading-text{
+  font-family:'Rajdhani',sans-serif;font-size:2.8rem;font-weight:700;
+  color:var(--green);letter-spacing:4px;margin-top:20px;
+  text-shadow:0 0 30px rgba(0,255,136,0.6);
+}
+.loading-sub{color:var(--text2);font-size:0.9rem;letter-spacing:2px;margin-top:8px;}
+.loading-bar{
+  width:220px;height:3px;background:rgba(0,255,136,0.15);
+  border-radius:3px;margin-top:30px;overflow:hidden;
+}
+.loading-bar-fill{
+  height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--cyan));
+  border-radius:3px;animation:loadFill 2.2s ease forwards;
+}
+@keyframes loadFill{to{width:100%;}}
+/* ===== APP CONTAINER ===== */
+#app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:20px 16px 60px;}
+/* ===== HEADER ===== */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 28px;
+  background:rgba(4,18,42,0.8);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  backdrop-filter:blur(20px);
+  margin-bottom:20px;
+  position:relative;overflow:hidden;
+}
+.header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent);
+}
+.header-left{display:flex;align-items:center;gap:16px;}
+.ghost-mini{animation:float 3s ease-in-out infinite;filter:drop-shadow(0 0 8px rgba(0,255,136,0.5));}
+.brand h1{
+  font-family:'Rajdhani',sans-serif;font-size:2rem;font-weight:700;
+  color:var(--green);letter-spacing:3px;line-height:1;
+  text-shadow:0 0 20px rgba(0,255,136,0.4);
+}
+.brand p{color:var(--text3);font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;}
+.header-badge{
+  background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);
+  border-radius:20px;padding:6px 14px;font-size:0.75rem;color:var(--cyan);
+  letter-spacing:1px;font-family:'Share Tech Mono',monospace;
+}
+/* ===== MODE SELECTOR ===== */
+.mode-bar{
+  display:flex;gap:12px;margin-bottom:20px;
+}
+.mode-btn{
+  flex:1;padding:14px 20px;border-radius:var(--radius);
+  border:1px solid var(--border);background:var(--card);
+  color:var(--text2);cursor:pointer;font-family:'Rajdhani',sans-serif;
+  font-size:1.05rem;font-weight:600;letter-spacing:1px;
+  transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.mode-btn:hover{border-color:var(--green);color:var(--text);}
+.mode-btn.active{
+  border-color:var(--green);background:rgba(0,255,136,0.07);
+  color:var(--green);box-shadow:var(--glow);
+}
+.mode-btn .dot{width:10px;height:10px;border-radius:50%;background:currentColor;}
+.mode-btn.quick .dot{background:var(--cyan);}
+.mode-btn.deep .dot{background:var(--green);}
+/* ===== API KEY PANEL ===== */
+.api-panel{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:22px 24px;margin-bottom:20px;
+  display:none;animation:slideDown 0.3s ease;
+}
+.api-panel.show{display:block;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+.api-panel h3{
+  font-family:'Rajdhani',sans-serif;font-size:1.1rem;color:var(--cyan);
+  letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.api-row{display:flex;gap:10px;margin-bottom:14px;}
+.api-input{
+  flex:1;background:rgba(0,10,30,0.6);border:1px solid var(--border2);
+  border-radius:10px;padding:11px 16px;color:var(--text);
+  font-family:'Share Tech Mono',monospace;font-size:0.85rem;outline:none;
+  transition:border-color 0.3s;
+}
+.api-input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,200,255,0.1);}
+.btn-save,.btn-clear{
+  padding:11px 18px;border-radius:10px;border:none;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.9rem;
+  letter-spacing:1px;transition:all 0.3s;
+}
+.btn-save{background:var(--cyan2);color:#000;}
+.btn-save:hover{background:var(--cyan);transform:translateY(-1px);}
+.btn-clear{background:rgba(255,23,68,0.1);color:var(--red);border:1px solid rgba(255,23,68,0.2);}
+.btn-clear:hover{background:rgba(255,23,68,0.2);}
+.api-guide{
+  background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.1);
+  border-radius:10px;padding:14px 16px;font-size:0.82rem;color:var(--text2);
+  line-height:1.6;
+}
+.api-guide a{color:var(--cyan);text-decoration:none;}
+.api-guide a:hover{text-decoration:underline;}
+.api-status{
+  display:inline-flex;align-items:center;gap:6px;font-size:0.8rem;
+  margin-top:10px;padding:5px 12px;border-radius:20px;
+  background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);
+  color:var(--green);
+}
+.api-status.no-key{color:var(--red);background:rgba(255,23,68,0.06);border-color:rgba(255,23,68,0.15);}
+/* ===== STEP PROGRESS ===== */
+.progress-wrapper{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px 24px;margin-bottom:16px;
+}
+.progress-label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.78rem;color:var(--text2);letter-spacing:1px;margin-bottom:10px;
+}
+.step-title-label{font-family:'Rajdhani',sans-serif;font-size:1.1rem;color:var(--text);font-weight:600;}
+.progress-track{height:4px;background:rgba(255,255,255,0.05);border-radius:4px;position:relative;}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));
+  border-radius:4px;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:0 0 12px rgba(0,255,136,0.4);
+}
+.step-dots{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.step-dot{
+  width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--border);background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.72rem;font-family:'Share Tech Mono',monospace;
+  color:var(--text3);cursor:pointer;transition:all 0.2s;
+}
+.step-dot.done{border-color:var(--green2);background:rgba(0,255,136,0.1);color:var(--green);}
+.step-dot.active{border-color:var(--green);background:rgba(0,255,136,0.15);color:var(--green);box-shadow:0 0 8px rgba(0,255,136,0.3);}
+/* ===== FORM CARD ===== */
+.form-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:28px 28px;
+  backdrop-filter:blur(20px);position:relative;overflow:hidden;
+}
+.form-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent);
+}
+.step-panel{display:none;}
+.step-panel.active{display:block;animation:fadeSlide 0.35s ease;}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+.step-header{margin-bottom:24px;}
+.step-num{
+  font-family:'Share Tech Mono',monospace;font-size:0.72rem;
+  color:var(--green);letter-spacing:2px;opacity:0.7;
+}
+.step-header h2{
+  font-family:'Rajdhani',sans-serif;font-size:1.7rem;font-weight:700;
+  color:var(--text);margin-top:2px;
+}
+.step-header p{color:var(--text2);font-size:0.88rem;margin-top:4px;}
+/* ===== FORM ELEMENTS ===== */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+.form-row.single{grid-template-columns:1fr;}
+.form-row.triple{grid-template-columns:1fr 1fr 1fr;}
+.field-group{display:flex;flex-direction:column;gap:7px;}
+.field-label{font-size:0.82rem;color:var(--text2);letter-spacing:0.5px;font-weight:500;}
+.field-input,.field-select,.field-textarea{
+  background:rgba(0,10,30,0.5);border:1px solid var(--border);
+  border-radius:10px;padding:11px 14px;color:var(--text);
+  font-family:'Exo 2',sans-serif;font-size:0.9rem;outline:none;
+  transition:border-color 0.3s,box-shadow 0.3s;width:100%;
+}
+.field-input:focus,.field-select:focus,.field-textarea:focus{
+  border-color:var(--green);box-shadow:0 0 0 2px rgba(0,255,136,0.08);
+}
+.field-select{cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300ff88' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;
+}
+.field-select option{background:#071530;}
+.field-textarea{min-height:90px;resize:vertical;line-height:1.5;}
+/* ===== SYMPTOM GRID ===== */
+.symptom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px;margin-bottom:14px;}
+.sym-chip{
+  padding:9px 12px;border-radius:9px;border:1px solid var(--border);
+  background:rgba(0,10,30,0.4);color:var(--text2);font-size:0.82rem;
+  cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:7px;
+  user-select:none;
+}
+.sym-chip:hover{border-color:rgba(0,255,136,0.3);color:var(--text);}
+.sym-chip.selected{
+  border-color:var(--green);background:rgba(0,255,136,0.09);
+  color:var(--green);box-shadow:0 0 8px rgba(0,255,136,0.15);
+}
+.sym-chip .sym-icon{font-size:1rem;}
+/* ===== YES/NO TOGGLES ===== */
+.yn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.yn-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(0,10,30,0.4);
+}
+.yn-label{font-size:0.85rem;color:var(--text2);}
+.yn-toggle{display:flex;gap:6px;}
+.yn-btn{
+  width:42px;padding:5px 0;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--text3);font-size:0.75rem;
+  font-family:'Rajdhani',sans-serif;font-weight:600;cursor:pointer;
+  transition:all 0.2s;letter-spacing:0.5px;text-align:center;
+}
+.yn-btn.yes.active{background:rgba(0,255,136,0.15);color:var(--green);border-color:var(--green);}
+.yn-btn.no.active{background:rgba(255,23,68,0.12);color:var(--red);border-color:rgba(255,23,68,0.4);}
+.yn-btn:hover{color:var(--text);}
+/* ===== SEVERITY BUTTONS ===== */
+.sev-row{display:flex;gap:12px;}
+.sev-btn{
+  flex:1;padding:13px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(0,10,30,0.4);color:var(--text2);cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:600;
+  transition:all 0.2s;text-align:center;
+}
+.sev-btn[data-sev="mild"].active{border-color:#4cff91;background:rgba(76,255,145,0.1);color:#4cff91;}
+.sev-btn[data-sev="moderate"].active{border-color:var(--yellow);background:rgba(255,214,0,0.1);color:var(--yellow);}
+.sev-btn[data-sev="severe"].active{border-color:var(--red);background:rgba(255,23,68,0.1);color:var(--red);}
+/* ===== ONSET BUTTONS ===== */
+.onset-row{display:flex;gap:12px;}
+.onset-btn{
+  flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(0,10,30,0.4);color:var(--text2);cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:600;
+  transition:all 0.2s;text-align:center;
+}
+.onset-btn.active{border-color:var(--cyan);background:rgba(0,200,255,0.09);color:var(--cyan);}
+/* ===== VITALS GRID ===== */
+.vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.vital-card{
+  background:rgba(0,8,25,0.6);border:1px solid var(--border);
+  border-radius:12px;padding:16px;
+}
+.vital-card-title{font-size:0.75rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;}
+.vital-input-row{display:flex;gap:8px;align-items:center;}
+.vital-unit{font-size:0.8rem;color:var(--text3);min-width:40px;}
+/* ===== FILE UPLOAD ===== */
+.upload-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.file-slot{
+  border:1.5px dashed var(--border);border-radius:12px;padding:14px;
+  cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;
+  background:rgba(0,8,25,0.4);text-align:center;min-height:80px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.file-slot:hover{border-color:rgba(0,255,136,0.35);background:rgba(0,255,136,0.03);}
+.file-slot.has-file{border-color:var(--green2);border-style:solid;background:rgba(0,255,136,0.05);}
+.file-slot input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.file-slot-icon{font-size:1.6rem;margin-bottom:4px;}
+.file-slot-label{font-size:0.76rem;color:var(--text3);}
+.file-slot.has-file .file-slot-label{color:var(--green);font-size:0.72rem;word-break:break-all;}
+.file-info{font-size:0.7rem;color:var(--text3);margin-top:3px;}
+/* ===== NAV BUTTONS ===== */
+.nav-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:28px;padding-top:20px;border-top:1px solid var(--border);
+}
+.btn-back{
+  padding:11px 24px;border-radius:10px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:600;
+  letter-spacing:1px;transition:all 0.2s;
+}
+.btn-back:hover{border-color:var(--text2);color:var(--text);}
+.btn-next{
+  padding:12px 32px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,var(--green2),var(--cyan2));
+  color:#000;cursor:pointer;font-family:'Rajdhani',sans-serif;
+  font-size:1rem;font-weight:700;letter-spacing:1.5px;
+  transition:all 0.25s;box-shadow:0 4px 20px rgba(0,255,136,0.2);
+}
+.btn-next:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(0,255,136,0.35);}
+.btn-diagnose{
+  padding:14px 36px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#ff1744,#ff6b00);
+  color:#fff;cursor:pointer;font-family:'Rajdhani',sans-serif;
+  font-size:1.05rem;font-weight:700;letter-spacing:2px;
+  transition:all 0.25s;box-shadow:0 4px 20px rgba(255,23,68,0.3);
+  display:flex;align-items:center;gap:10px;
+}
+.btn-diagnose:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(255,23,68,0.45);}
+/* ===== ANALYZING SCREEN ===== */
+#analyzeScreen{
+  display:none;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:60px 40px;text-align:center;margin-bottom:20px;
+}
+#analyzeScreen.show{display:block;}
+.analyze-ghost{animation:float 2s ease-in-out infinite;
+  filter:drop-shadow(0 0 30px rgba(0,255,136,0.6));}
+.analyze-title{
+  font-family:'Rajdhani',sans-serif;font-size:1.8rem;font-weight:700;
+  color:var(--green);letter-spacing:2px;margin-top:20px;
+}
+.analyze-sub{color:var(--text2);margin-top:8px;font-size:0.9rem;}
+.analyze-msg{
+  color:var(--cyan);font-family:'Share Tech Mono',monospace;
+  font-size:0.82rem;margin-top:18px;min-height:20px;
+  animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:0.5;}50%{opacity:1;}}
+.scan-bar{
+  width:280px;height:3px;background:rgba(0,255,136,0.1);
+  border-radius:3px;margin:18px auto 0;overflow:hidden;
+}
+.scan-fill{
+  height:100%;width:30%;background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent);
+  animation:scan 1.8s linear infinite;
+}
+@keyframes scan{0%{transform:translateX(-100%);}100%{transform:translateX(400%)}}
+/* ===== REPORT ===== */
+#reportSection{display:none;}
+#reportSection.show{display:block;}
+.report-header{
+  background:linear-gradient(135deg,rgba(0,255,136,0.06),rgba(0,200,255,0.06));
+  border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:28px 32px;margin-bottom:16px;
+  display:flex;align-items:center;gap:20px;position:relative;overflow:hidden;
+}
+.report-header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent);
+}
+.report-ghost{filter:drop-shadow(0 0 15px rgba(0,255,136,0.5));}
+.report-header-text h2{
+  font-family:'Rajdhani',sans-serif;font-size:1.8rem;font-weight:700;
+  color:var(--green);letter-spacing:2px;
+}
+.report-header-text p{color:var(--text2);font-size:0.82rem;margin-top:4px;}
+.report-id{
+  margin-left:auto;font-family:'Share Tech Mono',monospace;
+  font-size:0.75rem;color:var(--text3);text-align:right;
+}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.report-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px 22px;
+}
+.report-card.full{grid-column:1/-1;}
+.report-card-title{
+  font-family:'Rajdhani',sans-serif;font-size:0.8rem;font-weight:600;
+  color:var(--text3);letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.report-card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+/* Diagnosis cards */
+.diag-item{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(0,8,25,0.5);margin-bottom:10px;
+}
+.diag-rank{
+  font-family:'Share Tech Mono',monospace;font-size:1.2rem;
+  color:var(--text3);min-width:28px;
+}
+.diag-name{font-family:'Rajdhani',sans-serif;font-size:1.15rem;font-weight:600;color:var(--text);flex:1;}
+.diag-conf{text-align:right;}
+.conf-num{
+  font-family:'Share Tech Mono',monospace;font-size:1.3rem;
+  color:var(--green);font-weight:bold;
+}
+.conf-bar{width:80px;height:4px;background:rgba(255,255,255,0.07);border-radius:4px;margin-top:4px;}
+.conf-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:4px;}
+/* Urgency */
+.urgency-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 22px;border-radius:12px;font-family:'Rajdhani',sans-serif;
+  font-size:1.25rem;font-weight:700;letter-spacing:2px;
+}
+.urgency-badge.mild{background:rgba(76,255,145,0.1);border:1px solid rgba(76,255,145,0.3);color:#4cff91;}
+.urgency-badge.moderate{background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.3);color:var(--yellow);}
+.urgency-badge.emergency{background:rgba(255,23,68,0.1);border:1px solid rgba(255,23,68,0.3);color:var(--red);
+  animation:emergencyPulse 2s ease infinite;}
+@keyframes emergencyPulse{0%,100%{box-shadow:none;}50%{box-shadow:0 0 20px rgba(255,23,68,0.3);}}
+/* Report content */
+.report-content{
+  color:var(--text2);font-size:0.88rem;line-height:1.75;
+  white-space:pre-wrap;
+}
+.report-content strong{color:var(--text);font-weight:600;}
+/* Patient summary */
+.patient-tags{display:flex;flex-wrap:wrap;gap:8px;}
+.ptag{
+  padding:5px 12px;border-radius:20px;font-size:0.78rem;
+  background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.15);color:var(--cyan);
+}
+/* Report actions */
+.report-actions{display:flex;gap:12px;margin-top:16px;}
+.btn-action{
+  padding:12px 28px;border-radius:10px;border:none;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:600;
+  letter-spacing:1px;transition:all 0.25s;
+}
+.btn-print{background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.25);color:var(--cyan);}
+.btn-print:hover{background:rgba(0,200,255,0.2);}
+.btn-new{background:linear-gradient(135deg,var(--green2),var(--cyan2));color:#000;}
+.btn-new:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,255,136,0.3);}
+/* Disclaimer */
+.disclaimer{
+  background:rgba(255,214,0,0.04);border:1px solid rgba(255,214,0,0.15);
+  border-radius:10px;padding:14px 18px;margin-top:14px;
+  font-size:0.78rem;color:#aa9400;line-height:1.6;
+}
+/* ===== FOOTER ===== */
+.footer{
+  text-align:center;padding:24px;margin-top:40px;
+  border-top:1px solid rgba(0,255,136,0.06);
+}
+.footer-credit{
+  font-family:'Rajdhani',sans-serif;font-size:0.85rem;
+  color:var(--text3);letter-spacing:1px;
+}
+.footer-credit span{color:var(--green);}
+/* ===== QUICK MODE BADGE ===== */
+.quick-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:20px;font-size:0.75rem;
+  background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);
+  color:var(--cyan);font-family:'Share Tech Mono',monospace;
+}
+/* Tooltip */
+.tip{font-size:0.76rem;color:var(--text3);margin-top:6px;}
+/* ===== RESPONSIVE ===== */
+@media(max-width:640px){
+  .form-row{grid-template-columns:1fr;}
+  .form-row.triple{grid-template-columns:1fr 1fr;}
+  .report-grid{grid-template-columns:1fr;}
+  .upload-grid{grid-template-columns:repeat(2,1fr);}
+  .header{padding:14px 16px;}
+  .brand h1{font-size:1.6rem;}
+  .form-card{padding:20px 16px;}
+  .vitals-grid{grid-template-columns:1fr;}
+  .sev-row{flex-direction:column;}
+  .mode-bar{flex-direction:column;}
+  .nav-row{flex-direction:column;gap:12px;}
+  .btn-back,.btn-next,.btn-diagnose{width:100%;justify-content:center;}
+  .report-actions{flex-direction:column;}
+}
+@media print{
+  body{background:#fff!important;color:#000!important;}
+  .mode-bar,.api-panel,.progress-wrapper,.nav-row,.report-actions,
+  .header,#loadingScreen,.footer{display:none!important;}
+  .report-card,.diag-item{border-color:#ccc!important;background:#fff!important;}
+  .report-content{color:#333!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loadingScreen">
+  <div class="ghost-float">
+    <svg class="ghost-svg" width="90" height="110" viewBox="0 0 90 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M45 5C24.01 5 7 22.01 7 43v52l10-8 10 8 10-8 10 8 10-8 10 8 8-6.5V43C75 22.01 57.99 5 45 5z" fill="rgba(0,255,136,0.12)" stroke="#00ff88" stroke-width="1.5"/>
+      <circle cx="32" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+      <circle cx="58" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+      <circle cx="34" cy="43" r="3" fill="#020c18"/>
+      <circle cx="60" cy="43" r="3" fill="#020c18"/>
+      <path d="M36 60 Q45 68 54 60" stroke="#00ff88" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <line x1="45" y1="5" x2="45" y2="0" stroke="#00ff88" stroke-width="1.5" opacity="0.5"/>
+      <path d="M20 85 L10 95" stroke="#00ff88" stroke-width="1.5" opacity="0.4" stroke-dasharray="3 3"/>
+      <path d="M70 85 L80 95" stroke="#00ff88" stroke-width="1.5" opacity="0.4" stroke-dasharray="3 3"/>
+    </svg>
+  </div>
+  <div class="loading-text">DR GHOST</div>
+  <div class="loading-sub">INITIALIZING AI MEDICAL SYSTEM</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <svg class="ghost-mini" width="46" height="56" viewBox="0 0 90 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M45 5C24.01 5 7 22.01 7 43v52l10-8 10 8 10-8 10 8 10-8 10 8 8-6.5V43C75 22.01 57.99 5 45 5z" fill="rgba(0,255,136,0.1)" stroke="#00ff88" stroke-width="2"/>
+        <circle cx="32" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+        <circle cx="58" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+        <circle cx="34" cy="43" r="3" fill="#020c18"/>
+        <circle cx="60" cy="43" r="3" fill="#020c18"/>
+        <path d="M36 60 Q45 68 54 60" stroke="#00ff88" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <div class="brand">
+        <h1>DR GHOST</h1>
+        <p>AI Medical Consultation System · v2.5</p>
+      </div>
+    </div>
+    <div class="header-badge" id="modeBadge">⚡ QUICK MODE</div>
+  </div>
+
+  <!-- MODE SELECTOR -->
+  <div class="mode-bar">
+    <button class="mode-btn quick active" onclick="setMode('quick')" id="btnQuick">
+      <span class="dot"></span> ⚡ QUICK SEARCH
+      <small style="color:var(--text3);font-size:0.72rem;font-weight:400;display:block;margin-top:2px;">No API key needed</small>
+    </button>
+    <button class="mode-btn deep" onclick="setMode('deep')" id="btnDeep">
+      <span class="dot"></span> 🔬 DEEP SEARCH
+      <small style="color:var(--text3);font-size:0.72rem;font-weight:400;display:block;margin-top:2px;">Full AI analysis · API key required</small>
+    </button>
+  </div>
+
+  <!-- API KEY PANEL -->
+  <div class="api-panel" id="apiPanel">
+    <h3>🔑 Gemini API Configuration</h3>
+    <div class="api-row">
+      <input class="api-input" type="password" id="apiKeyInput" placeholder="Enter your Gemini API key (AIza...)" autocomplete="off"/>
+      <button class="btn-save" onclick="saveApiKey()">SAVE</button>
+      <button class="btn-clear" onclick="clearApiKey()">CLEAR</button>
+    </div>
+    <div class="api-guide">
+      <strong style="color:var(--cyan)">🆓 Get your FREE Gemini API key in 3 steps:</strong><br>
+      1. Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a><br>
+      2. Sign in with your Google account → Click <strong>"Create API Key"</strong><br>
+      3. Copy the key (starts with <code style="color:var(--green)">AIza</code>) and paste it above → Click <strong>SAVE</strong><br>
+      <span style="opacity:0.7">✅ Free tier: 1500 requests/day · Your key is stored locally in your browser only.</span>
+    </div>
+    <div id="apiStatus" class="api-status no-key">⚠ No API key saved</div>
+  </div>
+
+  <!-- FORM SECTION -->
+  <div id="formSection">
+    <!-- PROGRESS -->
+    <div class="progress-wrapper">
+      <div class="progress-label">
+        <span class="step-title-label" id="stepTitleLabel">Step 1: Patient Identity</span>
+        <span id="stepCounter" style="font-family:'Share Tech Mono',monospace;color:var(--green);">1 / 9</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:11.1%"></div></div>
+      <div class="step-dots" id="stepDots"></div>
+    </div>
+
+    <!-- FORM CARD -->
+    <div class="form-card">
+
+      <!-- STEP 1: AGE / GENDER -->
+      <div class="step-panel active" id="step1">
+        <div class="step-header">
+          <div class="step-num">STEP 01 — PATIENT IDENTITY</div>
+          <h2>Who needs help today?</h2>
+          <p>Basic demographic information to personalize the consultation</p>
+        </div>
+        <div class="form-row">
+          <div class="field-group">
+            <label class="field-label">Age (years)</label>
+            <input class="field-input" type="number" id="patAge" min="0" max="120" placeholder="e.g. 35">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Gender</label>
+            <select class="field-select" id="patGender">
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">How are you feeling right now?</label>
+            <textarea class="field-textarea" id="patFeeling" placeholder="Describe how you feel right now in your own words... (e.g. very weak, burning sensation, heaviness in chest...)"></textarea>
+          </div>
+        </div>
+        <div class="nav-row">
+          <div></div>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: SYMPTOMS -->
+      <div class="step-panel" id="step2">
+        <div class="step-header">
+          <div class="step-num">STEP 02 — SYMPTOMS</div>
+          <h2>What symptoms are you experiencing?</h2>
+          <p>Select all that apply — you can add custom symptoms below</p>
+        </div>
+        <div class="symptom-grid" id="symptomGrid">
+          <!-- Symptoms injected by JS -->
+        </div>
+        <div class="field-group" style="margin-top:8px;">
+          <label class="field-label">Other symptoms (type and press Enter)</label>
+          <input class="field-input" type="text" id="customSymptomInput" placeholder="e.g. earache, blurred vision...">
+        </div>
+        <div id="customSymptoms" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;"></div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: DURATION + SEVERITY -->
+      <div class="step-panel" id="step3">
+        <div class="step-header">
+          <div class="step-num">STEP 03 — DURATION & SEVERITY</div>
+          <h2>How long and how bad?</h2>
+          <p>Help DR GHOST assess the progression of your condition</p>
+        </div>
+        <div class="form-row">
+          <div class="field-group">
+            <label class="field-label">Duration</label>
+            <input class="field-input" type="number" id="durNum" min="0" placeholder="e.g. 3">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Duration Unit</label>
+            <select class="field-select" id="durUnit">
+              <option value="hours">Hours</option>
+              <option value="days" selected>Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group" style="margin-bottom:18px;">
+          <label class="field-label">Severity Level</label>
+          <div class="sev-row" id="sevRow">
+            <button class="sev-btn" data-sev="mild" onclick="setSeverity(this)">🟢 MILD</button>
+            <button class="sev-btn" data-sev="moderate" onclick="setSeverity(this)">🟡 MODERATE</button>
+            <button class="sev-btn" data-sev="severe" onclick="setSeverity(this)">🔴 SEVERE</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">When did symptoms start?</label>
+          <input class="field-input" type="date" id="sympStartDate">
+        </div>
+        <div class="field-group" style="margin-top:14px;">
+          <label class="field-label">Onset Type</label>
+          <div class="onset-row" id="onsetRow">
+            <button class="onset-btn" data-onset="sudden" onclick="setOnset(this)">⚡ SUDDEN</button>
+            <button class="onset-btn" data-onset="gradual" onclick="setOnset(this)">📈 GRADUAL</button>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: SYMPTOM-SPECIFIC -->
+      <div class="step-panel" id="step4">
+        <div class="step-header">
+          <div class="step-num">STEP 04 — SYMPTOM DETAILS</div>
+          <h2>Tell me more about your symptoms</h2>
+          <p>Additional details help DR GHOST make a more accurate assessment</p>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">What makes your symptoms WORSE?</label>
+            <input class="field-input" type="text" id="worseFactor" placeholder="e.g. movement, eating, lying down, cold air...">
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">What makes your symptoms BETTER?</label>
+            <input class="field-input" type="text" id="betterFactor" placeholder="e.g. rest, warm water, specific position...">
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">Is the pain/discomfort spreading to any other area?</label>
+            <input class="field-input" type="text" id="spreading" placeholder="e.g. chest pain spreading to left arm and jaw...">
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">Any other information about your symptoms you want to share?</label>
+            <textarea class="field-textarea" id="symptomExtra" placeholder="Any additional details, pattern, time of day symptoms peak, etc..."></textarea>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: MEDICAL HISTORY -->
+      <div class="step-panel" id="step5">
+        <div class="step-header">
+          <div class="step-num">STEP 05 — MEDICAL HISTORY</div>
+          <h2>Your health background</h2>
+          <p>Pre-existing conditions that may influence diagnosis</p>
+        </div>
+        <div class="yn-grid" id="historyGrid">
+          <!-- Injected by JS -->
+        </div>
+        <div class="form-row single" style="margin-top:16px;">
+          <div class="field-group">
+            <label class="field-label">Any other medical conditions or surgeries?</label>
+            <textarea class="field-textarea" id="otherHistory" placeholder="e.g. had appendix removed in 2019, kidney stone in 2022..."></textarea>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 6: MEDICATIONS -->
+      <div class="step-panel" id="step6">
+        <div class="step-header">
+          <div class="step-num">STEP 06 — MEDICATIONS</div>
+          <h2>Current medications</h2>
+          <p>What medicines, antibiotics or supplements you are currently taking</p>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">Medicines currently being taken</label>
+            <textarea class="field-textarea" id="currentMeds" placeholder="e.g. Metformin 500mg, Atorvastatin 10mg, Paracetamol 650mg (as needed)..."></textarea>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">Medicines available at home right now (you can take if needed)</label>
+            <textarea class="field-textarea" id="availMeds" placeholder="e.g. Paracetamol, ORS, Antacids, Azithromycin..."></textarea>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="field-group">
+            <label class="field-label">Known drug allergies</label>
+            <input class="field-input" type="text" id="allergies" placeholder="e.g. Penicillin, Sulfa drugs, Aspirin... (or write None)">
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 7: RISK FACTORS -->
+      <div class="step-panel" id="step7">
+        <div class="step-header">
+          <div class="step-num">STEP 07 — RISK FACTORS</div>
+          <h2>Lifestyle & exposure</h2>
+          <p>These factors significantly impact disease risk and treatment</p>
+        </div>
+        <div class="yn-grid" style="margin-bottom:18px;" id="riskGrid">
+          <!-- Injected by JS -->
+        </div>
+        <div class="form-row" id="travelRow" style="display:none;">
+          <div class="field-group">
+            <label class="field-label">Recent travel destination(s)</label>
+            <input class="field-input" type="text" id="travelDest" placeholder="e.g. Bangladesh, Mumbai, forest area...">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Days since return</label>
+            <input class="field-input" type="number" id="travelDays" placeholder="e.g. 5" min="0">
+          </div>
+        </div>
+        <div class="form-row single" id="sickContactRow" style="display:none;">
+          <div class="field-group">
+            <label class="field-label">Describe the sick person contact (symptoms, relation)</label>
+            <input class="field-input" type="text" id="sickContactDesc" placeholder="e.g. colleague had high fever and rash 3 days ago...">
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 8: VITALS -->
+      <div class="step-panel" id="step8">
+        <div class="step-header">
+          <div class="step-num">STEP 08 — VITALS <span class="quick-badge">Optional</span></div>
+          <h2>Measurable signs</h2>
+          <p>Enter readings if you have measurement devices available</p>
+        </div>
+        <div class="vitals-grid">
+          <div class="vital-card">
+            <div class="vital-card-title">🌡 Temperature</div>
+            <div class="vital-input-row">
+              <input class="field-input" type="number" id="vTemp" placeholder="e.g. 102" step="0.1">
+              <select class="field-select" id="vTempUnit" style="max-width:70px;">
+                <option value="F">°F</option>
+                <option value="C">°C</option>
+              </select>
+            </div>
+          </div>
+          <div class="vital-card">
+            <div class="vital-card-title">💉 Blood Pressure</div>
+            <div class="vital-input-row">
+              <input class="field-input" type="number" id="vBpSys" placeholder="Systolic (e.g. 120)">
+              <span class="vital-unit" style="font-size:1.2rem;color:var(--text2);">/</span>
+              <input class="field-input" type="number" id="vBpDia" placeholder="Diastolic (e.g. 80)">
+              <span class="vital-unit">mmHg</span>
+            </div>
+          </div>
+          <div class="vital-card">
+            <div class="vital-card-title">🫁 SpO₂ (Oxygen)</div>
+            <div class="vital-input-row">
+              <input class="field-input" type="number" id="vSpO2" placeholder="e.g. 98" min="0" max="100">
+              <span class="vital-unit">%</span>
+            </div>
+          </div>
+          <div class="vital-card">
+            <div class="vital-card-title">💓 Heart Rate</div>
+            <div class="vital-input-row">
+              <input class="field-input" type="number" id="vHR" placeholder="e.g. 75" min="0">
+              <span class="vital-unit">bpm</span>
+            </div>
+          </div>
+        </div>
+        <div class="tip" style="margin-top:16px;">💡 If you don't have the devices, leave blank. DR GHOST will work with available data.</div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-next" onclick="goNext()">NEXT STEP →</button>
+        </div>
+      </div>
+
+      <!-- STEP 9: UPLOAD REPORTS -->
+      <div class="step-panel" id="step9">
+        <div class="step-header">
+          <div class="step-num">STEP 09 — UPLOAD REPORTS <span class="quick-badge">Optional</span></div>
+          <h2>Medical reports & test results</h2>
+          <p>Upload blood tests, X-rays, ECG, sugar tests (PDF preferred · max 10MB per file)</p>
+        </div>
+        <div class="upload-grid" id="uploadGrid">
+          <!-- 10 file slots injected by JS -->
+        </div>
+        <div class="tip" style="margin-top:14px;">📋 Accepted: PDF, JPG, PNG, WEBP · Min resolution recommended: 1500×3000px · Max 10MB/file · 10 slots total<br>
+        ⚠ In Deep Search mode, uploaded reports are analyzed by AI for advanced diagnosis.</div>
+        <div class="nav-row">
+          <button class="btn-back" onclick="goBack()">← BACK</button>
+          <button class="btn-diagnose" onclick="diagnose()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            GET DIAGNOSIS
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /form-card -->
+  </div><!-- /formSection -->
+
+  <!-- ANALYZING SCREEN -->
+  <div id="analyzeScreen">
+    <svg class="analyze-ghost" width="80" height="98" viewBox="0 0 90 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M45 5C24.01 5 7 22.01 7 43v52l10-8 10 8 10-8 10 8 10-8 10 8 8-6.5V43C75 22.01 57.99 5 45 5z" fill="rgba(0,255,136,0.12)" stroke="#00ff88" stroke-width="2"/>
+      <circle cx="32" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+      <circle cx="58" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+      <circle cx="34" cy="43" r="3" fill="#020c18"/>
+      <circle cx="60" cy="43" r="3" fill="#020c18"/>
+      <path d="M38 62 Q45 58 52 62" stroke="#00ff88" stroke-width="2" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div class="analyze-title">DR GHOST IS ANALYZING</div>
+    <div class="analyze-sub">Please wait while your case is being evaluated...</div>
+    <div class="analyze-msg" id="analyzeMsg">Loading patient data...</div>
+    <div class="scan-bar"><div class="scan-fill"></div></div>
+  </div>
+
+  <!-- REPORT SECTION -->
+  <div id="reportSection">
+    <div class="report-header">
+      <svg class="report-ghost" width="60" height="73" viewBox="0 0 90 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M45 5C24.01 5 7 22.01 7 43v52l10-8 10 8 10-8 10 8 10-8 10 8 8-6.5V43C75 22.01 57.99 5 45 5z" fill="rgba(0,255,136,0.1)" stroke="#00ff88" stroke-width="2"/>
+        <circle cx="32" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+        <circle cx="58" cy="44" r="7" fill="#00ff88" opacity="0.9"/>
+        <circle cx="34" cy="43" r="3" fill="#020c18"/>
+        <circle cx="60" cy="43" r="3" fill="#020c18"/>
+        <path d="M36 60 Q45 68 54 60" stroke="#00ff88" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <div class="report-header-text">
+        <h2>DR GHOST MEDICAL REPORT</h2>
+        <p id="reportDate"></p>
+        <p id="reportModeTag" style="margin-top:6px;"></p>
+      </div>
+      <div class="report-id" id="reportId"></div>
+    </div>
+
+    <!-- Patient Summary -->
+    <div class="report-card" style="margin-bottom:14px;">
+      <div class="report-card-title">🧑‍⚕️ Patient Profile</div>
+      <div class="patient-tags" id="patientTags"></div>
+    </div>
+
+    <!-- Top 2 Diagnoses -->
+    <div class="report-grid">
+      <div class="report-card">
+        <div class="report-card-title">🔬 Possible Diagnoses</div>
+        <div id="diagnosisCards"></div>
+      </div>
+      <div class="report-card">
+        <div class="report-card-title">🚨 Urgency Level</div>
+        <div id="urgencyBadge" style="margin-top:6px;"></div>
+        <div id="urgencyNote" style="margin-top:14px;font-size:0.83rem;color:var(--text2);line-height:1.6;"></div>
+      </div>
+    </div>
+
+    <!-- Treatment -->
+    <div class="report-card full" style="margin-top:14px;">
+      <div class="report-card-title">💊 Immediate Treatment & First Aid</div>
+      <div class="report-content" id="treatmentContent"></div>
+    </div>
+
+    <!-- Daily Routine -->
+    <div class="report-card full" style="margin-top:14px;">
+      <div class="report-card-title">📅 Recommended Daily Routine</div>
+      <div class="report-content" id="routineContent"></div>
+    </div>
+
+    <!-- Deep Search Extra (full AI report) -->
+    <div class="report-card full" id="deepReportExtra" style="margin-top:14px;display:none;">
+      <div class="report-card-title">🧠 DR GHOST Full Analysis</div>
+      <div class="report-content" id="deepReportContent"></div>
+    </div>
+
+    <div class="disclaimer">
+      ⚠️ <strong>IMPORTANT DISCLAIMER:</strong> DR GHOST is an AI-powered informational tool. This report does NOT constitute professional medical advice, diagnosis or treatment. Always consult a qualified healthcare professional for medical decisions. In an emergency, call your local emergency number immediately. The information provided is for general informational purposes only.
+    </div>
+
+    <div class="report-actions">
+      <button class="btn-action btn-print" onclick="window.print()">🖨 PRINT REPORT</button>
+      <button class="btn-action btn-new" onclick="newConsultation()">👻 NEW CONSULTATION</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-credit">Developed By <span>Amlan Dey</span> · DR GHOST AI Medical System · <span style="color:var(--text3);">Powered by Google Gemini AI</span></div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ============================
+// STATE
+// ============================
+let currentStep = 1;
+const totalSteps = 9;
+let appMode = 'quick'; // 'quick' | 'deep'
+let selectedSymptoms = [];
+let customSymptomsList = [];
+let severity = '';
+let onset = '';
+let medHistory = {};
+let riskFactors = {};
+let uploadedFiles = []; // Array of {name, base64, mime}
+
+const stepTitles = [
+  'Patient Identity','Symptoms','Duration & Severity',
+  'Symptom Details','Medical History','Medications',
+  'Risk Factors','Vitals','Upload Reports'
+];
+
+// ============================
+// INIT
+// ============================
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.getElementById('loadingScreen').classList.add('hide');
+    setTimeout(() => {
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+    }, 800);
+  }, 2400);
+
+  buildSymptomGrid();
+  buildHistoryGrid();
+  buildRiskGrid();
+  buildUploadGrid();
+  buildStepDots();
+  loadApiKey();
+
+  document.getElementById('customSymptomInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter' && e.target.value.trim()) addCustomSymptom(e.target.value.trim());
+  });
+});
+
+// ============================
+// SYMPTOM DATA
+// ============================
+const symptoms = [
+  {icon:'🌡',label:'Fever'},
+  {icon:'🤕',label:'Headache'},
+  {icon:'😮‍💨',label:'Cough'},
+  {icon:'🤒',label:'Sore Throat'},
+  {icon:'👃',label:'Runny Nose'},
+  {icon:'💪',label:'Body Aches'},
+  {icon:'😴',label:'Fatigue'},
+  {icon:'🤢',label:'Nausea'},
+  {icon:'🤮',label:'Vomiting'},
+  {icon:'💨',label:'Diarrhea'},
+  {icon:'💔',label:'Chest Pain'},
+  {icon:'😮',label:'Shortness of Breath'},
+  {icon:'😵',label:'Dizziness'},
+  {icon:'🔴',label:'Rash/Skin Changes'},
+  {icon:'🫃',label:'Abdominal Pain'},
+  {icon:'🔙',label:'Back Pain'},
+  {icon:'🦴',label:'Joint Pain'},
+  {icon:'🍽',label:'Loss of Appetite'},
+  {icon:'🥶',label:'Chills'},
+  {icon:'💦',label:'Night Sweats'},
+  {icon:'⚖',label:'Weight Loss'},
+  {icon:'🦵',label:'Swelling/Edema'},
+  {icon:'⚡',label:'Numbness/Tingling'},
+  {icon:'👁',label:'Vision Changes'},
+  {icon:'👂',label:'Hearing Issues'},
+  {icon:'🫁',label:'Chest Tightness'},
+  {icon:'💧',label:'Frequent Urination'},
+  {icon:'👅',label:'Loss of Taste/Smell'},
+  {icon:'🧠',label:'Confusion'},
+  {icon:'😰',label:'Excessive Sweating'},
+];
+
+function buildSymptomGrid() {
+  const grid = document.getElementById('symptomGrid');
+  symptoms.forEach(s => {
+    const chip = document.createElement('div');
+    chip.className = 'sym-chip';
+    chip.innerHTML = `<span class="sym-icon">${s.icon}</span>${s.label}`;
+    chip.onclick = () => toggleSymptom(chip, s.label);
+    grid.appendChild(chip);
+  });
+}
+
+function toggleSymptom(chip, label) {
+  chip.classList.toggle('selected');
+  if (chip.classList.contains('selected')) {
+    if (!selectedSymptoms.includes(label)) selectedSymptoms.push(label);
+  } else {
+    selectedSymptoms = selectedSymptoms.filter(s => s !== label);
+  }
+}
+
+function addCustomSymptom(label) {
+  if (customSymptomsList.includes(label)) return;
+  customSymptomsList.push(label);
+  const wrap = document.getElementById('customSymptoms');
+  const chip = document.createElement('div');
+  chip.className = 'sym-chip selected';
+  chip.style.cursor = 'default';
+  chip.innerHTML = `<span>➕</span>${label} <span onclick="removeCustomSymptom(this,'${label}')" style="cursor:pointer;opacity:0.6;margin-left:4px;">✕</span>`;
+  wrap.appendChild(chip);
+  document.getElementById('customSymptomInput').value = '';
+}
+
+function removeCustomSymptom(el, label) {
+  customSymptomsList = customSymptomsList.filter(s => s !== label);
+  el.parentElement.remove();
+}
+
+// ============================
+// MEDICAL HISTORY DATA
+// ============================
+const historyItems = [
+  'Diabetes','Hypertension','Asthma','Heart Disease',
+  'Neurological Disease','Kidney Disease','Liver Disease',
+  'Cancer (any)','Thyroid Disorder','COPD','None of Above'
+];
+
+function buildHistoryGrid() {
+  const grid = document.getElementById('historyGrid');
+  historyItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'yn-item';
+    div.innerHTML = `
+      <span class="yn-label">${item}</span>
+      <div class="yn-toggle">
+        <button class="yn-btn yes" onclick="setYN(this,'hist','${item}','yes')">YES</button>
+        <button class="yn-btn no active" onclick="setYN(this,'hist','${item}','no')">NO</button>
+      </div>`;
+    grid.appendChild(div);
+    medHistory[item] = 'no';
+  });
+}
+
+// ============================
+// RISK FACTORS DATA
+// ============================
+const riskItems = [
+  {key:'smoking',label:'Smoker'},
+  {key:'alcohol',label:'Alcohol Consumer'},
+  {key:'travel',label:'Recent Travel (14 days)'},
+  {key:'sickContact',label:'Contact with Sick Person'},
+];
+
+function buildRiskGrid() {
+  const grid = document.getElementById('riskGrid');
+  riskItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'yn-item';
+    div.innerHTML = `
+      <span class="yn-label">${item.label}</span>
+      <div class="yn-toggle">
+        <button class="yn-btn yes" onclick="setYN(this,'risk','${item.key}','yes')">YES</button>
+        <button class="yn-btn no active" onclick="setYN(this,'risk','${item.key}','no')">NO</button>
+      </div>`;
+    grid.appendChild(div);
+    riskFactors[item.key] = 'no';
+  });
+}
+
+function setYN(btn, type, key, val) {
+  const toggle = btn.parentElement;
+  toggle.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type === 'hist') medHistory[key] = val;
+  if (type === 'risk') {
+    riskFactors[key] = val;
+    if (key === 'travel') document.getElementById('travelRow').style.display = val==='yes'?'grid':'none';
+    if (key === 'sickContact') document.getElementById('sickContactRow').style.display = val==='yes'?'flex':'none';
+  }
+}
+
+// ============================
+// UPLOAD GRID
+// ============================
+function buildUploadGrid() {
+  const grid = document.getElementById('uploadGrid');
+  for (let i = 0; i < 10; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'file-slot';
+    slot.id = `fileSlot${i}`;
+    slot.innerHTML = `
+      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFile(this,${i})">
+      <div class="file-slot-icon">📄</div>
+      <div class="file-slot-label">Report ${i+1}<br><span class="file-info">PDF / Image · max 10MB</span></div>`;
+    grid.appendChild(slot);
+  }
+  uploadedFiles = new Array(10).fill(null);
+}
+
+function handleFile(input, idx) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { alert('File exceeds 10MB limit. Please compress it.'); return; }
+  const slot = document.getElementById(`fileSlot${idx}`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    const b64 = e.target.result.split(',')[1];
+    uploadedFiles[idx] = { name: file.name, base64: b64, mime: file.type, size: file.size };
+    slot.classList.add('has-file');
+    slot.querySelector('.file-slot-icon').textContent = file.type.includes('pdf') ? '📋' : '🖼';
+    slot.querySelector('.file-slot-label').innerHTML = `<strong style="color:var(--green)">${file.name}</strong><br><span class="file-info">${(file.size/1024).toFixed(0)} KB · uploaded ✓</span>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================
+// STEP DOTS
+// ============================
+function buildStepDots() {
+  const wrap = document.getElementById('stepDots');
+  for (let i = 1; i <= totalSteps; i++) {
+    const dot = document.createElement('div');
+    dot.className = `step-dot${i===1?' active':''}`;
+    dot.id = `dot${i}`;
+    dot.textContent = i < 10 ? '0'+i : i;
+    dot.title = stepTitles[i-1];
+    dot.onclick = () => { if (i <= currentStep) goToStep(i); };
+    wrap.appendChild(dot);
+  }
+}
+
+function updateStepUI() {
+  document.getElementById('stepCounter').textContent = `${currentStep} / ${totalSteps}`;
+  document.getElementById('stepTitleLabel').textContent = `Step ${currentStep}: ${stepTitles[currentStep-1]}`;
+  document.getElementById('progressFill').style.width = `${(currentStep/totalSteps)*100}%`;
+  for (let i = 1; i <= totalSteps; i++) {
+    const dot = document.getElementById(`dot${i}`);
+    dot.className = 'step-dot' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
+  }
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`step${currentStep}`).classList.add('active');
+}
+
+function goNext() { if (currentStep < totalSteps) { currentStep++; updateStepUI(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function goBack() { if (currentStep > 1) { currentStep--; updateStepUI(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function goToStep(n) { currentStep = n; updateStepUI(); }
+
+function setSeverity(btn) {
+  document.querySelectorAll('#sevRow .sev-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  severity = btn.dataset.sev;
+}
+
+function setOnset(btn) {
+  document.querySelectorAll('#onsetRow .onset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  onset = btn.dataset.onset;
+}
+
+// ============================
+// MODE
+// ============================
+function setMode(m) {
+  appMode = m;
+  document.getElementById('btnQuick').classList.toggle('active', m==='quick');
+  document.getElementById('btnDeep').classList.toggle('active', m==='deep');
+  document.getElementById('apiPanel').classList.toggle('show', m==='deep');
+  document.getElementById('modeBadge').textContent = m==='quick' ? '⚡ QUICK MODE' : '🔬 DEEP SEARCH';
+}
+
+// ============================
+// API KEY
+// ============================
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { alert('Please enter a valid API key.'); return; }
+  localStorage.setItem('drGhostApiKey', key);
+  updateApiStatus(key);
+  alert('✅ API key saved securely in your browser!');
+}
+
+function clearApiKey() {
+  localStorage.removeItem('drGhostApiKey');
+  document.getElementById('apiKeyInput').value = '';
+  updateApiStatus('');
+}
+
+function loadApiKey() {
+  const key = localStorage.getItem('drGhostApiKey') || '';
+  if (key) {
+    document.getElementById('apiKeyInput').value = key;
+    updateApiStatus(key);
+  }
+}
+
+function updateApiStatus(key) {
+  const el = document.getElementById('apiStatus');
+  if (key) {
+    el.className = 'api-status';
+    el.innerHTML = `✅ API key saved · ${key.substring(0,8)}...`;
+  } else {
+    el.className = 'api-status no-key';
+    el.innerHTML = '⚠ No API key saved';
+  }
+}
+
+function getApiKey() { return localStorage.getItem('drGhostApiKey') || ''; }
+
+// ============================
+// COLLECT PATIENT DATA
+// ============================
+function collectData() {
+  return {
+    age: document.getElementById('patAge').value || 'Not specified',
+    gender: document.getElementById('patGender').value || 'Not specified',
+    feeling: document.getElementById('patFeeling').value || '',
+    symptoms: [...selectedSymptoms, ...customSymptomsList],
+    duration: `${document.getElementById('durNum').value || '?'} ${document.getElementById('durUnit').value}`,
+    severity,
+    sympStartDate: document.getElementById('sympStartDate').value || '',
+    onset,
+    worseFactor: document.getElementById('worseFactor').value || '',
+    betterFactor: document.getElementById('betterFactor').value || '',
+    spreading: document.getElementById('spreading').value || '',
+    symptomExtra: document.getElementById('symptomExtra').value || '',
+    medHistory: {...medHistory},
+    otherHistory: document.getElementById('otherHistory').value || '',
+    currentMeds: document.getElementById('currentMeds').value || 'None',
+    availMeds: document.getElementById('availMeds').value || 'None',
+    allergies: document.getElementById('allergies').value || 'None',
+    riskFactors: {...riskFactors},
+    travelDest: document.getElementById('travelDest').value || '',
+    travelDays: document.getElementById('travelDays').value || '',
+    sickContactDesc: document.getElementById('sickContactDesc').value || '',
+    vitals: {
+      temp: document.getElementById('vTemp').value ? `${document.getElementById('vTemp').value}°${document.getElementById('vTempUnit').value}` : '',
+      bp: document.getElementById('vBpSys').value ? `${document.getElementById('vBpSys').value}/${document.getElementById('vBpDia').value} mmHg` : '',
+      spO2: document.getElementById('vSpO2').value ? `${document.getElementById('vSpO2').value}%` : '',
+      hr: document.getElementById('vHR').value ? `${document.getElementById('vHR').value} bpm` : ''
+    },
+    files: uploadedFiles.filter(Boolean)
+  };
+}
+
+// ============================
+// DIAGNOSE
+// ============================
+async function diagnose() {
+  const data = collectData();
+  if (!data.symptoms.length && !data.feeling) {
+    alert('Please select at least one symptom or describe how you feel.'); return;
+  }
+  if (appMode === 'deep' && !getApiKey()) {
+    alert('⚠ Deep Search requires a Gemini API key. Please enter and save your API key, or switch to Quick Search.'); return;
+  }
+
+  // Hide form, show analyzing
+  document.getElementById('formSection').style.display = 'none';
+  document.getElementById('reportSection').classList.remove('show');
+  const analyzeScreen = document.getElementById('analyzeScreen');
+  analyzeScreen.classList.add('show');
+
+  const msgs = [
+    'Parsing patient profile...',
+    'Cross-referencing symptom database...',
+    'Evaluating risk factors...',
+    'Analyzing medical history...',
+    'Computing differential diagnosis...',
+    'Preparing treatment protocols...',
+    'Generating comprehensive report...',
+    'Finalizing DR GHOST assessment...'
+  ];
+  let mi = 0;
+  const msgEl = document.getElementById('analyzeMsg');
+  const interval = setInterval(() => {
+    msgEl.textContent = msgs[mi % msgs.length]; mi++;
+  }, 900);
+
+  try {
+    let report;
+    if (appMode === 'quick') {
+      await new Promise(r => setTimeout(r, 3500));
+      report = quickSearchAnalysis(data);
+    } else {
+      report = await deepSearchAnalysis(data);
+    }
+    clearInterval(interval);
+    analyzeScreen.classList.remove('show');
+    renderReport(report, data);
+  } catch (err) {
+    clearInterval(interval);
+    analyzeScreen.classList.remove('show');
+    document.getElementById('formSection').style.display = 'block';
+    alert(`❌ Analysis failed: ${err.message}\n\nPlease check your API key or try Quick Search mode.`);
+  }
+}
+
+// ============================
+// QUICK SEARCH (Local Algorithm)
+// ============================
+const diseaseDB = [
+  {name:'Common Cold',syms:['runny nose','cough','sore throat','fever','fatigue','sneezing','headache'],urgency:'mild',desc:'Viral upper respiratory infection'},
+  {name:'Influenza (Flu)',syms:['fever','body aches','fatigue','cough','headache','chills','sore throat'],urgency:'moderate',desc:'Highly contagious viral infection'},
+  {name:'COVID-19',syms:['fever','cough','fatigue','shortness of breath','loss of taste/smell','body aches','headache'],urgency:'moderate',desc:'SARS-CoV-2 coronavirus infection'},
+  {name:'Bacterial Pneumonia',syms:['fever','cough','chest pain','shortness of breath','fatigue','chills'],urgency:'emergency',desc:'Bacterial lung infection requiring antibiotics'},
+  {name:'Viral Fever',syms:['fever','headache','body aches','fatigue','chills','loss of appetite','nausea'],urgency:'mild',desc:'Non-specific viral illness'},
+  {name:'Dengue Fever',syms:['fever','headache','body aches','rash/skin changes','joint pain','nausea','fatigue'],urgency:'emergency',desc:'Mosquito-borne viral hemorrhagic fever'},
+  {name:'Malaria',syms:['fever','chills','headache','body aches','nausea','excessive sweating','fatigue'],urgency:'emergency',desc:'Parasitic disease transmitted by mosquitoes'},
+  {name:'Typhoid Fever',syms:['fever','abdominal pain','diarrhea','headache','loss of appetite','fatigue','nausea'],urgency:'emergency',desc:'Salmonella typhi bacterial infection'},
+  {name:'Gastroenteritis',syms:['nausea','vomiting','diarrhea','abdominal pain','fever','loss of appetite'],urgency:'moderate',desc:'Inflammation of the GI tract'},
+  {name:'Food Poisoning',syms:['nausea','vomiting','diarrhea','abdominal pain','fever','body aches'],urgency:'moderate',desc:'Foodborne illness from contaminated food'},
+  {name:'UTI (Urinary Tract Infection)',syms:['frequent urination','abdominal pain','fever','fatigue'],urgency:'moderate',desc:'Bacterial infection of the urinary system'},
+  {name:'Migraine',syms:['headache','nausea','vision changes','dizziness','vomiting','fatigue'],urgency:'moderate',desc:'Neurological condition causing intense headaches'},
+  {name:'Hypertensive Crisis',syms:['headache','chest pain','dizziness','vision changes','shortness of breath','nausea'],urgency:'emergency',desc:'Dangerous spike in blood pressure'},
+  {name:'Acute Myocardial Infarction',syms:['chest pain','shortness of breath','excessive sweating','nausea','fatigue','numbness/tingling'],urgency:'emergency',desc:'Heart attack — CALL EMERGENCY IMMEDIATELY'},
+  {name:'Appendicitis',syms:['abdominal pain','fever','nausea','vomiting','loss of appetite'],urgency:'emergency',desc:'Inflammation of appendix — requires surgery'},
+  {name:'Asthma Attack',syms:['shortness of breath','chest tightness','cough','wheezing'],urgency:'emergency',desc:'Airway inflammation and constriction'},
+  {name:'GERD / Acid Reflux',syms:['chest pain','abdominal pain','nausea','cough','sore throat'],urgency:'mild',desc:'Gastroesophageal reflux disease'},
+  {name:'Anemia',syms:['fatigue','dizziness','shortness of breath','headache','swelling/edema'],urgency:'moderate',desc:'Low red blood cell count or hemoglobin'},
+  {name:'Diabetes (Type 2)',syms:['fatigue','frequent urination','weight loss','vision changes','excessive sweating'],urgency:'moderate',desc:'Metabolic disorder with high blood glucose'},
+  {name:'Sinusitis',syms:['headache','runny nose','sore throat','fatigue','fever','cough'],urgency:'mild',desc:'Inflammation of sinuses, often bacterial or viral'},
+  {name:'Chickenpox',syms:['fever','rash/skin changes','fatigue','body aches','loss of appetite'],urgency:'moderate',desc:'Highly contagious varicella-zoster virus infection'},
+  {name:'Hepatitis',syms:['nausea','abdominal pain','fatigue','loss of appetite','fever','weight loss'],urgency:'moderate',desc:'Inflammation of the liver'},
+  {name:'Kidney Stones',syms:['back pain','abdominal pain','frequent urination','nausea','vomiting'],urgency:'moderate',desc:'Mineral deposits in the kidneys'},
+  {name:'Stroke',syms:['confusion','numbness/tingling','vision changes','headache','dizziness','fatigue'],urgency:'emergency',desc:'Brain blood flow disruption — CALL EMERGENCY'},
+  {name:'Meningitis',syms:['fever','headache','nausea','vomiting','confusion','chills'],urgency:'emergency',desc:'Brain and spinal cord membrane inflammation'},
+  {name:'COPD Exacerbation',syms:['shortness of breath','cough','chest tightness','fatigue'],urgency:'emergency',desc:'Chronic obstructive pulmonary disease flare-up'},
+  {name:'Peptic Ulcer',syms:['abdominal pain','nausea','vomiting','loss of appetite','excessive sweating'],urgency:'moderate',desc:'Sores in the stomach or small intestine lining'},
+  {name:'Tuberculosis',syms:['cough','fever','night sweats','weight loss','fatigue','chest pain'],urgency:'emergency',desc:'Bacterial lung infection requiring long treatment'},
+  {name:'Measles',syms:['fever','rash/skin changes','cough','runny nose','fatigue','loss of appetite'],urgency:'moderate',desc:'Highly contagious viral infection'},
+  {name:'Pulmonary Embolism',syms:['chest pain','shortness of breath','cough','excessive sweating','dizziness'],urgency:'emergency',desc:'Blood clot in the lungs — CALL EMERGENCY'},
+];
+
+const quickTreatments = {
+  'mild':`• Rest and stay hydrated (minimum 8-10 glasses of water/day)\n• Take Paracetamol 500-650mg for fever/pain every 6 hours (do not exceed 4g/day)\n• Use steam inhalation for respiratory symptoms\n• Gargle with warm salt water for sore throat\n• Over-the-counter antihistamines for runny nose\n• Light, easily digestible food — khichdi, soup, bananas\n• Monitor temperature every 4 hours`,
+  'moderate':`• Seek medical consultation within 24-48 hours\n• Take Paracetamol 500-650mg every 6 hours for fever\n• Stay hydrated with ORS (Oral Rehydration Solution) if vomiting/diarrhea\n• Avoid self-medicating with antibiotics without prescription\n• Rest completely — avoid physical exertion\n• Monitor vital signs hourly if possible\n• Eat soft, bland foods; avoid spicy/oily food\n• Keep emergency contact numbers ready`,
+  'emergency':`🚨 SEEK EMERGENCY MEDICAL CARE IMMEDIATELY 🚨\n• Call emergency services (102/108 in India, 911 US, 999 UK) RIGHT NOW\n• Do NOT delay — this could be life-threatening\n• While waiting:\n  - Keep patient calm and in comfortable position\n  - Do not give food or water if surgical emergency suspected\n  - If breathing issues: sit upright, loosen tight clothing\n  - If chest pain: chew Aspirin 325mg if not allergic\n  - If unconscious but breathing: recovery position\n  - If not breathing: start CPR immediately`
+};
+
+const quickRoutines = {
+  'mild':`🍽 FOOD: Light meals — rice, dal, boiled vegetables, bananas, toast, soup. Avoid fried, spicy, heavy food. Eat small portions every 3-4 hours.\n\n🚿 HYGIENE: Shower daily with lukewarm water. Wash hands frequently for 20 seconds with soap.\n\n😴 SLEEP: 8-10 hours complete rest. Sleep on an elevated pillow for respiratory symptoms.\n\n🌿 ADDITIONAL: Herbal ginger-honey-tulsi tea 2x daily. Avoid cold beverages and AC. Keep room ventilated.`,
+  'moderate':`🍽 FOOD: BRAT diet (Bananas, Rice, Applesauce, Toast) for GI issues. Protein-rich foods for recovery. 3L fluids/day. Avoid alcohol, caffeine, heavy meals.\n\n🚿 HYGIENE: Lukewarm shower daily. Avoid hot water. Separate utensils if infectious disease suspected.\n\n😴 SLEEP: 10 hours minimum. No screen time 1 hour before bed. Elevate head 30° for breathing issues.\n\n💊 SUPPLEMENTS: Vitamin C 500mg, Zinc 25mg, Vitamin D if not contraindicated.\n\n🌿 HOME REMEDIES: Warm turmeric milk at bedtime. Honey-lemon-ginger tea 3x daily.`,
+  'emergency':`⚠ FOLLOW DOCTOR'S INSTRUCTIONS STRICTLY AFTER EMERGENCY CARE\n\n🍽 FOOD: As prescribed by treating physician — likely liquid/soft diet initially.\n\n😴 REST: Complete bed rest. No physical activity until doctor clears.\n\n💊 MEDICINES: Take ALL prescribed medications on schedule. Do not skip doses.\n\n📞 FOLLOW-UP: Schedule follow-up appointment within 48-72 hours of discharge.`
+};
+
+function quickSearchAnalysis(data) {
+  const allSymptoms = data.symptoms.map(s => s.toLowerCase());
+  const scores = diseaseDB.map(d => {
+    let matches = 0;
+    d.syms.forEach(s => { if (allSymptoms.some(a => a.includes(s.toLowerCase()) || s.toLowerCase().includes(a.split(' ')[0]))) matches++; });
+    const base = Math.round((matches / d.syms.length) * 100);
+    // Boost for severe cases
+    const boost = data.severity === 'severe' && d.urgency === 'emergency' ? 15 :
+                  data.severity === 'mild' && d.urgency === 'mild' ? 10 : 0;
+    return { ...d, confidence: Math.min(96, Math.max(5, base + boost)) };
+  });
+  scores.sort((a,b) => b.confidence - a.confidence);
+
+  const top2 = scores.slice(0,2);
+  // Determine overall urgency
+  let urgency = top2[0]?.urgency || 'mild';
+  if (data.severity === 'severe') urgency = 'emergency';
+  else if (data.severity === 'moderate' && urgency === 'mild') urgency = 'moderate';
+
+  // Special vital sign checks
+  const spO2 = parseFloat(document.getElementById('vSpO2').value);
+  const hr = parseFloat(document.getElementById('vHR').value);
+  const temp = parseFloat(document.getElementById('vTemp').value);
+  if ((spO2 && spO2 < 94) || (hr && (hr > 130 || hr < 45)) || (temp && temp > 104)) urgency = 'emergency';
+
+  return {
+    mode: 'quick',
+    diagnoses: top2.length ? top2 : [{name:'Unspecified Viral Illness',confidence:45,urgency:'moderate',desc:'Insufficient data for specific diagnosis'}],
+    urgency,
+    treatment: quickTreatments[urgency],
+    routine: quickRoutines[urgency],
+    deepReport: null
+  };
+}
+
+// ============================
+// DEEP SEARCH (Gemini API)
+// ============================
+async function deepSearchAnalysis(data) {
+  const apiKey = getApiKey();
+  const patientSummary = buildPrompt(data);
+
+  const parts = [{ text: patientSummary }];
+
+  // Add uploaded files
+  data.files.forEach(f => {
+    if (f) parts.push({ inline_data: { mime_type: f.mime, data: f.base64 } });
+  });
+
+  const requestBody = {
+    contents: [{ parts }],
+    generationConfig: { temperature: 0.25, maxOutputTokens: 2500, topP: 0.9 }
+  };
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) }
+  );
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API Error ${response.status}`);
+  }
+
+  const result = await response.json();
+  const rawText = result.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+
+  // Parse structured output
+  return parseAIResponse(rawText, data);
+}
+
+function buildPrompt(data) {
+  const histPositive = Object.entries(data.medHistory).filter(([k,v]) => v==='yes').map(([k]) => k).join(', ') || 'None';
+  const riskPositive = Object.entries(data.riskFactors).filter(([k,v]) => v==='yes').map(([k]) => k).join(', ') || 'None';
+  const vitalsStr = Object.entries(data.vitals).filter(([k,v])=>v).map(([k,v])=>`${k}: ${v}`).join(' | ') || 'Not measured';
+
+  return `You are DR GHOST, an advanced AI medical consultation system. Analyze this patient's complete medical data and generate a structured report.
+
+PATIENT DATA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Age: ${data.age} | Gender: ${data.gender}
+Current feeling: ${data.feeling || 'Not described'}
+Symptoms: ${data.symptoms.join(', ') || 'Not specified'}
+Duration: ${data.duration} | Severity: ${data.severity || 'Not specified'}
+Symptom start: ${data.sympStartDate || 'Unknown'} | Onset: ${data.onset || 'Unknown'}
+Worsening factors: ${data.worseFactor || 'None mentioned'}
+Relieving factors: ${data.betterFactor || 'None mentioned'}
+Spreading: ${data.spreading || 'No radiation mentioned'}
+Extra info: ${data.symptomExtra || 'None'}
+
+Medical History: ${histPositive}
+Other history: ${data.otherHistory || 'None'}
+Current medications: ${data.currentMeds}
+Available medications: ${data.availMeds}
+Allergies: ${data.allergies}
+Risk factors: ${riskPositive}
+${data.riskFactors.travel === 'yes' ? `Travel to: ${data.travelDest} (${data.travelDays} days ago)` : ''}
+${data.riskFactors.sickContact === 'yes' ? `Sick contact: ${data.sickContactDesc}` : ''}
+Vitals: ${vitalsStr}
+Medical reports uploaded: ${data.files.length} file(s)${data.files.length ? ' — please analyze them' : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Generate a comprehensive medical consultation report in this EXACT format:
+
+##DIAGNOSIS1##
+[Disease name — most likely diagnosis]
+##CONF1##
+[Confidence percentage as number only, e.g. 78]
+##DIAGNOSIS2##
+[Second most likely disease]
+##CONF2##
+[Confidence percentage as number only]
+##URGENCY##
+[ONLY ONE of: mild / moderate / emergency]
+##URGENCY_NOTE##
+[2-3 sentences explaining urgency level and what patient should do immediately]
+##TREATMENT##
+[Detailed immediate treatment plan: specific medicines with doses from available meds if possible, home remedies, first aid steps. Be specific and actionable. Include dosages. 150-250 words.]
+##ROUTINE##
+[Detailed daily routine covering: morning routine, food/diet plan with specific foods, hydration, rest/sleep schedule, hygiene, physical activity restrictions, evening routine, bedtime routine. 150-250 words.]
+##ANALYSIS##
+[Full clinical analysis: differential diagnosis reasoning, what the vitals/reports suggest, risk factor implications, prognosis, red flag symptoms to watch for, when to escalate to ER, specific follow-up recommendations. 200-300 words. Be thorough like a real doctor.]
+
+Remember: This patient may be in a critical situation. Be thorough, specific, and clinically accurate. Always include a note to seek professional medical care.`;
+}
+
+function parseAIResponse(text, data) {
+  const get = (tag) => {
+    const rx = new RegExp(`##${tag}##\\s*([\\s\\S]*?)(?=##|$)`, 'i');
+    return (text.match(rx)?.[1] || '').trim();
+  };
+  const d1 = get('DIAGNOSIS1') || 'Unable to determine';
+  const d2 = get('DIAGNOSIS2') || 'Secondary condition';
+  const c1 = parseInt(get('CONF1')) || 65;
+  const c2 = parseInt(get('CONF2')) || 45;
+  const urgencyRaw = (get('URGENCY') || '').toLowerCase();
+  const urgency = ['mild','moderate','emergency'].includes(urgencyRaw) ? urgencyRaw : 'moderate';
+
+  return {
+    mode: 'deep',
+    diagnoses: [
+      { name: d1, confidence: Math.min(99, Math.max(10, c1)) },
+      { name: d2, confidence: Math.min(99, Math.max(10, c2)) }
+    ],
+    urgency,
+    urgencyNote: get('URGENCY_NOTE'),
+    treatment: get('TREATMENT') || quickTreatments[urgency],
+    routine: get('ROUTINE') || quickRoutines[urgency],
+    deepReport: get('ANALYSIS')
+  };
+}
+
+// ============================
+// RENDER REPORT
+// ============================
+function renderReport(report, data) {
+  const now = new Date();
+  document.getElementById('reportDate').textContent = `Generated: ${now.toLocaleString('en-IN',{dateStyle:'long',timeStyle:'short'})}`;
+  document.getElementById('reportModeTag').innerHTML = report.mode === 'deep' ?
+    '<span class="api-status" style="font-size:0.75rem;">🔬 DEEP SEARCH — Full AI Analysis</span>' :
+    '<span class="quick-badge">⚡ QUICK SEARCH — Symptom-based</span>';
+  document.getElementById('reportId').innerHTML = `Report ID<br><span style="color:var(--green);font-size:0.85rem;">DRGH-${Date.now().toString(36).toUpperCase()}</span>`;
+
+  // Patient tags
+  const tags = document.getElementById('patientTags');
+  tags.innerHTML = '';
+  const tagData = [
+    `👤 ${data.age} yrs`, data.gender,
+    ...(data.symptoms.slice(0,4)),
+    data.severity ? `${data.severity.toUpperCase()}` : null,
+    data.duration !== '?  ' ? `⏱ ${data.duration}` : null,
+    data.vitals.temp ? `🌡 ${data.vitals.temp}` : null,
+    data.vitals.spO2 ? `🫁 SpO₂ ${data.vitals.spO2}` : null,
+  ].filter(Boolean);
+  tagData.forEach(t => { const d = document.createElement('div'); d.className='ptag'; d.textContent=t; tags.appendChild(d); });
+
+  // Diagnosis cards
+  const dc = document.getElementById('diagnosisCards');
+  dc.innerHTML = '';
+  report.diagnoses.forEach((d, i) => {
+    dc.innerHTML += `
+      <div class="diag-item">
+        <div class="diag-rank">#${i+1}</div>
+        <div>
+          <div class="diag-name">${d.name}</div>
+          ${d.desc ? `<div style="font-size:0.75rem;color:var(--text3);margin-top:2px;">${d.desc}</div>` : ''}
+        </div>
+        <div class="diag-conf">
+          <div class="conf-num">${d.confidence}%</div>
+          <div class="conf-bar"><div class="conf-fill" style="width:${d.confidence}%"></div></div>
+        </div>
+      </div>`;
+  });
+
+  // Urgency
+  const ub = document.getElementById('urgencyBadge');
+  const urgencyMap = {
+    mild:   { icon:'🟢', label:'MILD',      class:'mild' },
+    moderate:{ icon:'🟡', label:'MODERATE', class:'moderate' },
+    emergency:{ icon:'🔴', label:'EMERGENCY', class:'emergency' }
+  };
+  const u = urgencyMap[report.urgency] || urgencyMap.moderate;
+  ub.innerHTML = `<div class="urgency-badge ${u.class}">${u.icon} ${u.label}</div>`;
+  document.getElementById('urgencyNote').textContent = report.urgencyNote ||
+    (report.urgency === 'emergency' ? '⚠ Seek immediate emergency medical care. Do not delay. Call emergency services now.' :
+     report.urgency === 'moderate' ? 'Consult a doctor within 24-48 hours. Monitor symptoms closely.' :
+     'Rest at home and monitor symptoms. Visit a doctor if no improvement in 3-4 days.');
+
+  // Treatment & Routine
+  document.getElementById('treatmentContent').textContent = report.treatment || 'No treatment data available.';
+  document.getElementById('routineContent').textContent = report.routine || 'No routine data available.';
+
+  // Deep report extra
+  if (report.mode === 'deep' && report.deepReport) {
+    document.getElementById('deepReportExtra').style.display = 'block';
+    document.getElementById('deepReportContent').textContent = report.deepReport;
+  } else {
+    document.getElementById('deepReportExtra').style.display = 'none';
+  }
+
+  document.getElementById('reportSection').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================
+// NEW CONSULTATION
+// ============================
+function newConsultation() {
+  // Reset all state
+  currentStep = 1;
+  selectedSymptoms = [];
+  customSymptomsList = [];
+  severity = '';
+  onset = '';
+  medHistory = {};
+  riskFactors = {};
+
+  // Reset form
+  document.getElementById('patAge').value = '';
+  document.getElementById('patGender').value = '';
+  document.getElementById('patFeeling').value = '';
+  document.querySelectorAll('.sym-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('customSymptoms').innerHTML = '';
+  document.getElementById('customSymptomInput').value = '';
+  document.getElementById('durNum').value = '';
+  document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.onset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sympStartDate').value = '';
+  document.getElementById('worseFactor').value = '';
+  document.getElementById('betterFactor').value = '';
+  document.getElementById('spreading').value = '';
+  document.getElementById('symptomExtra').value = '';
+  document.querySelectorAll('.yn-btn').forEach(b => { b.classList.remove('active'); if(b.classList.contains('no')) b.classList.add('active'); });
+  historyItems.forEach(i => medHistory[i] = 'no');
+  riskItems.forEach(i => riskFactors[i.key] = 'no');
+  document.getElementById('otherHistory').value = '';
+  document.getElementById('currentMeds').value = '';
+  document.getElementById('availMeds').value = '';
+  document.getElementById('allergies').value = '';
+  document.getElementById('travelRow').style.display = 'none';
+  document.getElementById('sickContactRow').style.display = 'none';
+  document.getElementById('travelDest').value = '';
+  document.getElementById('travelDays').value = '';
+  document.getElementById('sickContactDesc').value = '';
+  document.getElementById('vTemp').value = '';
+  document.getElementById('vBpSys').value = '';
+  document.getElementById('vBpDia').value = '';
+  document.getElementById('vSpO2').value = '';
+  document.getElementById('vHR').value = '';
+  // Reset uploads
+  uploadedFiles = new Array(10).fill(null);
+  document.getElementById('uploadGrid').innerHTML = '';
+  buildUploadGrid();
+
+  document.getElementById('reportSection').classList.remove('show');
+  document.getElementById('formSection').style.display = 'block';
+  updateStepUI();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
